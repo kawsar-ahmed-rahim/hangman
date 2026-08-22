@@ -4,7 +4,7 @@
 #include <time.h>
 
 int main() {
-    char words[5][20] = {"programming", "hangman", "computer", "keyboard", "console"};
+    char words[5][20] = {"programming", "mongodb", "computer", "keyboard", "console"};
     srand(time(0));
     char word[20];
     strcpy(word, words[rand() % 5]);
@@ -19,6 +19,7 @@ int main() {
     int found;
 
     printf("=== HANGMAN GAME ===\n");
+    printf("=== GUESS A WORD RELATED TO IT SECTOR ===\n");
 
     while (attempts > 0 && strcmp(guessed, word) != 0) {
         printf("\nWord: %s\n", guessed);
