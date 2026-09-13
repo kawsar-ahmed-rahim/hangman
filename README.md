@@ -98,7 +98,7 @@ The original program looped through one long-running process: pick a word once, 
 
 ## 🔗 Live Demo
 
-👉 **Live Website:** _add your Vercel URL here after deploying_
+👉 **Live Website:** https://hangman-rosy.vercel.app/
 
 ---
 
