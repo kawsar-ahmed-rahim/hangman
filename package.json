@@ -1,0 +1,14 @@
+{
+  "name": "hangman-web",
+  "version": "1.0.0",
+  "description": "Browser interface for a C hangman game, served via a Node backend",
+  "main": "server.js",
+  "scripts": {
+    "build:c": "gcc -o hangman hangman.c",
+    "vercel-build": "gcc -o hangman hangman.c",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "functions": {
+    "api/index.js": {
+      "includeFiles": "hangman"
+    }
+  },
+  "rewrites": [
+    { "source": "/new-game", "destination": "/api/index" },
+    { "source": "/guess", "destination": "/api/index" }
+  ]
+}
