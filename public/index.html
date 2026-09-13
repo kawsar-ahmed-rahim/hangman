@@ -1,355 +1,537 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hangman — Guess the IT Word</title>
-<link rel="icon" type="image/png" href="/kr.png" />
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --bg: #1E1B2E;
-    --panel: #272341;
-    --line: #3B3660;
-    --text: #F2F0EA;
-    --text-dim: #A79FC2;
-    --correct: #7FA66B;
-    --wrong: #C06B52;
-    --gallows: #7C93A8;
-  }
-
-  * { box-sizing: border-box; }
-
-  body {
-    margin: 0;
-    min-height: 100vh;
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Inter', system-ui, sans-serif;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 32px 16px;
-  }
-
-  main { width: 100%; max-width: 480px; }
-
-  h1 {
-    font-family: 'Space Grotesk', sans-serif;
-    font-weight: 700;
-    font-size: 2rem;
-    margin: 0 0 6px;
-    letter-spacing: -0.01em;
-  }
-
-  .tagline {
-    color: var(--text-dim);
-    font-size: 0.92rem;
-    margin: 0 0 24px;
-  }
-
-  .board {
-    display: flex;
-    gap: 20px;
-    align-items: center;
-    border: 1px solid var(--line);
-    padding: 20px;
-    margin-bottom: 20px;
-  }
-
-  .gallows-wrap { flex: 0 0 120px; }
-  .gallows-wrap svg { width: 100%; height: auto; }
-  .gallows-wrap line, .gallows-wrap circle { stroke: var(--gallows); }
-  .gallows-wrap .figure { stroke: var(--wrong); }
-
-  .word-side { flex: 1; min-width: 0; }
-
-  .attempts {
-    font-size: 0.78rem;
-    color: var(--text-dim);
-    margin-bottom: 10px;
-  }
-  .attempts strong { color: var(--text); font-variant-numeric: tabular-nums; }
-
-  .masked-word {
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 1.5rem;
-    letter-spacing: 0.18em;
-    word-break: break-all;
-    line-height: 1.4;
-  }
-
-  .status {
-    text-align: center;
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 1rem;
-    min-height: 1.4em;
-    margin-bottom: 18px;
-  }
-  .status.correct { color: var(--correct); }
-  .status.wrong { color: var(--wrong); }
-
-  .final-banner {
-    text-align: center;
-    border: 1px solid var(--line);
-    padding: 18px 16px;
-    margin-bottom: 18px;
-  }
-  .final-title {
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 1.2rem;
-    margin-bottom: 4px;
-  }
-  .final-title.won { color: var(--correct); }
-  .final-title.lost { color: var(--wrong); }
-  .final-sub { color: var(--text-dim); font-size: 0.85rem; }
-
-  .keyboard {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 6px;
-    margin-bottom: 20px;
-  }
-
-  button.key {
-    background: var(--panel);
-    border: 1px solid var(--line);
-    color: var(--text);
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 0.85rem;
-    padding: 10px 0;
-    cursor: pointer;
-    text-transform: uppercase;
-    transition: border-color 0.15s ease, transform 0.1s ease, background 0.15s ease, color 0.15s ease;
-  }
-  button.key:hover:not(:disabled) { border-color: var(--text-dim); }
-  button.key:active:not(:disabled) { transform: scale(0.94); }
-  button.key:disabled { cursor: default; opacity: 0.45; }
-  button.key.correct { background: var(--correct); border-color: var(--correct); color: var(--bg); opacity: 1; }
-  button.key.wrong { background: var(--wrong); border-color: var(--wrong); color: var(--bg); opacity: 1; }
-  button.key:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
-
-  footer { text-align: center; }
-
-  .reset {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: var(--text);
-    border: 1px solid var(--text);
-    color: var(--bg);
-    font-family: 'Space Grotesk', sans-serif;
-    font-weight: 700;
-    font-size: 0.92rem;
-    letter-spacing: 0.01em;
-    padding: 12px 28px;
-    cursor: pointer;
-    transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease;
-  }
-  .reset svg { width: 16px; height: 16px; transition: transform 0.3s ease; }
-  .reset:hover { background: transparent; color: var(--text); }
-  .reset:hover svg { transform: rotate(180deg); }
-  .reset:active { transform: scale(0.97); }
-  .reset:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
-
-  @media (max-width: 380px) {
-    .keyboard { grid-template-columns: repeat(6, 1fr); }
-    .board { flex-direction: column; }
-    .gallows-wrap { flex: 0 0 auto; width: 100px; }
-  }
-</style>
-</head>
-<body>
-<main>
-  <h1>Hangman</h1>
-  <p class="tagline">Guess a word related to the IT sector.</p>
-
-  <div class="board">
-    <div class="gallows-wrap">
-      <svg viewBox="0 0 100 110">
-        <!-- gallows structure, always visible -->
-        <line x1="10" y1="105" x2="70" y2="105" stroke-width="4" stroke-linecap="round"/>
-        <line x1="25" y1="105" x2="25" y2="8" stroke-width="4" stroke-linecap="round"/>
-        <line x1="25" y1="8" x2="65" y2="8" stroke-width="4" stroke-linecap="round"/>
-        <line x1="65" y1="8" x2="65" y2="20" stroke-width="4" stroke-linecap="round"/>
-        <!-- figure parts, toggled by JS as wrong guesses accumulate -->
-        <circle class="figure part" data-part="0" cx="65" cy="30" r="10" stroke-width="3" fill="none" style="display:none"/>
-        <line class="figure part" data-part="1" x1="65" y1="40" x2="65" y2="70" stroke-width="3" style="display:none"/>
-        <line class="figure part" data-part="2" x1="65" y1="48" x2="52" y2="60" stroke-width="3" stroke-linecap="round" style="display:none"/>
-        <line class="figure part" data-part="3" x1="65" y1="48" x2="78" y2="60" stroke-width="3" stroke-linecap="round" style="display:none"/>
-        <line class="figure part" data-part="4" x1="65" y1="70" x2="54" y2="90" stroke-width="3" stroke-linecap="round" style="display:none"/>
-        <line class="figure part" data-part="5" x1="65" y1="70" x2="76" y2="90" stroke-width="3" stroke-linecap="round" style="display:none"/>
-      </svg>
-    </div>
-    <div class="word-side">
-      <div class="attempts">Attempts left: <strong id="attempts-left">6</strong></div>
-      <div class="masked-word" id="masked-word">______</div>
-    </div>
-  </div>
-
-  <div class="status" id="status">Loading a word…</div>
-
-  <div class="final-banner" id="final-banner" hidden>
-    <div class="final-title" id="final-title"></div>
-    <div class="final-sub" id="final-sub"></div>
-  </div>
-
-  <div class="keyboard" id="keyboard"></div>
-
-  <footer>
-    <button class="reset" id="reset">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 12a9 9 0 1 1-2.64-6.36"/>
-        <polyline points="21 3 21 9 15 9"/>
-      </svg>
-      New game
-    </button>
-  </footer>
-</main>
-
-<script>
-  const maskedWordEl = document.getElementById('masked-word');
-  const attemptsLeftEl = document.getElementById('attempts-left');
-  const statusEl = document.getElementById('status');
-  const keyboardEl = document.getElementById('keyboard');
-  const finalBanner = document.getElementById('final-banner');
-  const finalTitle = document.getElementById('final-title');
-  const finalSub = document.getElementById('final-sub');
-  const resetBtn = document.getElementById('reset');
-  const figureParts = document.querySelectorAll('.figure.part');
-
-  let gameActive = false;
-  let startAttempts = 6;
-
-  function buildKeyboard() {
-    keyboardEl.innerHTML = '';
-    for (let c = 97; c <= 122; c++) {
-      const letter = String.fromCharCode(c);
-      const btn = document.createElement('button');
-      btn.className = 'key';
-      btn.textContent = letter;
-      btn.dataset.letter = letter;
-      btn.addEventListener('click', () => guess(letter));
-      keyboardEl.appendChild(btn);
-    }
-  }
-
-  function setKeyState(letter, state) {
-    const btn = keyboardEl.querySelector(`button[data-letter="${letter}"]`);
-    if (!btn) return;
-    btn.disabled = true;
-    btn.classList.add(state);
-  }
-
-  function updateGallows(attemptsLeft) {
-    const wrongCount = startAttempts - attemptsLeft;
-    figureParts.forEach((el) => {
-      const idx = Number(el.dataset.part);
-      el.style.display = idx < wrongCount ? '' : 'none';
-    });
-  }
-
-  function disableAllKeys() {
-    keyboardEl.querySelectorAll('button.key').forEach((b) => (b.disabled = true));
-  }
-
-  function enableAllKeys() {
-    keyboardEl.querySelectorAll('button.key').forEach((b) => {
-      b.disabled = false;
-      b.classList.remove('correct', 'wrong');
-    });
-  }
-
-  function spaceOutMasked(masked) {
-    return masked.split('').join(' ');
-  }
-
-  async function newGame() {
-    statusEl.textContent = 'Loading a word…';
-    statusEl.className = 'status';
-    finalBanner.hidden = true;
-    enableAllKeys();
-    updateGallows(6);
-
-    try {
-      const res = await fetch('/new-game', { method: 'POST' });
-      if (!res.ok) throw new Error('Server error');
-      const data = await res.json();
-
-      maskedWordEl.textContent = spaceOutMasked(data.masked);
-      attemptsLeftEl.textContent = data.attempts;
-      startAttempts = data.attempts;
-      gameActive = true;
-      statusEl.textContent = 'Make your first guess';
-      statusEl.className = 'status';
-    } catch (err) {
-      statusEl.textContent = 'Could not start a new game — try again';
-      statusEl.className = 'status wrong';
-    }
-  }
-
-  async function guess(letter) {
-    if (!gameActive) return;
-
-    try {
-      const res = await fetch('/guess', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ letter })
-      });
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        statusEl.textContent = errData.error || 'Something went wrong';
-        statusEl.className = 'status wrong';
-        return;
-      }
-      const data = await res.json();
-
-      maskedWordEl.textContent = spaceOutMasked(data.masked);
-      attemptsLeftEl.textContent = data.attempts;
-      updateGallows(data.attempts);
-
-      if (data.found) {
-        setKeyState(letter, 'correct');
-        statusEl.textContent = 'Good guess!';
-        statusEl.className = 'status correct';
-      } else {
-        setKeyState(letter, 'wrong');
-        statusEl.textContent = 'Wrong guess!';
-        statusEl.className = 'status wrong';
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hangman — Guess the IT Word</title>
+    <link rel="icon" type="image/png" href="kr.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #1e1b2e;
+        --panel: #272341;
+        --line: #3b3660;
+        --text: #f2f0ea;
+        --text-dim: #a79fc2;
+        --correct: #7fa66b;
+        --wrong: #c06b52;
+        --gallows: #7c93a8;
       }
 
-      if (data.status !== 'playing') {
-        gameActive = false;
-        disableAllKeys();
-        finalBanner.hidden = false;
-        if (data.status === 'won') {
-          finalTitle.textContent = 'Congratulations! You guessed the word!';
-          finalTitle.className = 'final-title won';
-        } else {
-          finalTitle.textContent = 'Game Over!';
-          finalTitle.className = 'final-title lost';
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Inter", system-ui, sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 32px 16px;
+      }
+
+      main {
+        width: 100%;
+        max-width: 480px;
+      }
+
+      h1 {
+        font-family: "Space Grotesk", sans-serif;
+        font-weight: 700;
+        font-size: 2rem;
+        margin: 0 0 6px;
+        letter-spacing: -0.01em;
+      }
+
+      .tagline {
+        color: var(--text-dim);
+        font-size: 0.92rem;
+        margin: 0 0 24px;
+      }
+
+      .board {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+        border: 1px solid var(--line);
+        padding: 20px;
+        margin-bottom: 20px;
+      }
+
+      .gallows-wrap {
+        flex: 0 0 120px;
+      }
+      .gallows-wrap svg {
+        width: 100%;
+        height: auto;
+      }
+      .gallows-wrap line,
+      .gallows-wrap circle {
+        stroke: var(--gallows);
+      }
+      .gallows-wrap .figure {
+        stroke: var(--wrong);
+      }
+
+      .word-side {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .attempts {
+        font-size: 0.78rem;
+        color: var(--text-dim);
+        margin-bottom: 10px;
+      }
+      .attempts strong {
+        color: var(--text);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .masked-word {
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 1.5rem;
+        letter-spacing: 0.18em;
+        word-break: break-all;
+        line-height: 1.4;
+      }
+
+      .status {
+        text-align: center;
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 1rem;
+        min-height: 1.4em;
+        margin-bottom: 18px;
+      }
+      .status.correct {
+        color: var(--correct);
+      }
+      .status.wrong {
+        color: var(--wrong);
+      }
+
+      .final-banner {
+        text-align: center;
+        border: 1px solid var(--line);
+        padding: 18px 16px;
+        margin-bottom: 18px;
+      }
+      .final-title {
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 1.2rem;
+        margin-bottom: 4px;
+      }
+      .final-title.won {
+        color: var(--correct);
+      }
+      .final-title.lost {
+        color: var(--wrong);
+      }
+      .final-sub {
+        color: var(--text-dim);
+        font-size: 0.85rem;
+      }
+
+      .keyboard {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 6px;
+        margin-bottom: 20px;
+      }
+
+      button.key {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        color: var(--text);
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 0.85rem;
+        padding: 10px 0;
+        cursor: pointer;
+        text-transform: uppercase;
+        transition:
+          border-color 0.15s ease,
+          transform 0.1s ease,
+          background 0.15s ease,
+          color 0.15s ease;
+      }
+      button.key:hover:not(:disabled) {
+        border-color: var(--text-dim);
+      }
+      button.key:active:not(:disabled) {
+        transform: scale(0.94);
+      }
+      button.key:disabled {
+        cursor: default;
+        opacity: 0.45;
+      }
+      button.key.correct {
+        background: var(--correct);
+        border-color: var(--correct);
+        color: var(--bg);
+        opacity: 1;
+      }
+      button.key.wrong {
+        background: var(--wrong);
+        border-color: var(--wrong);
+        color: var(--bg);
+        opacity: 1;
+      }
+      button.key:focus-visible {
+        outline: 2px solid var(--text);
+        outline-offset: 2px;
+      }
+
+      footer {
+        text-align: center;
+      }
+
+      .reset {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--text);
+        border: 1px solid var(--text);
+        color: var(--bg);
+        font-family: "Space Grotesk", sans-serif;
+        font-weight: 700;
+        font-size: 0.92rem;
+        letter-spacing: 0.01em;
+        padding: 12px 28px;
+        cursor: pointer;
+        transition:
+          background 0.15s ease,
+          color 0.15s ease,
+          transform 0.1s ease;
+      }
+      .reset svg {
+        width: 16px;
+        height: 16px;
+        transition: transform 0.3s ease;
+      }
+      .reset:hover {
+        background: transparent;
+        color: var(--text);
+      }
+      .reset:hover svg {
+        transform: rotate(180deg);
+      }
+      .reset:active {
+        transform: scale(0.97);
+      }
+      .reset:focus-visible {
+        outline: 2px solid var(--text);
+        outline-offset: 3px;
+      }
+
+      @media (max-width: 380px) {
+        .keyboard {
+          grid-template-columns: repeat(6, 1fr);
         }
-        finalSub.textContent = 'The word was: ' + data.word;
+        .board {
+          flex-direction: column;
+        }
+        .gallows-wrap {
+          flex: 0 0 auto;
+          width: 100px;
+        }
       }
-    } catch (err) {
-      statusEl.textContent = 'Something went wrong — try again';
-      statusEl.className = 'status wrong';
-    }
-  }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Hangman</h1>
+      <p class="tagline">Guess a word related to the IT sector.</p>
 
-  document.addEventListener('keydown', (e) => {
-    if (!gameActive) return;
-    const letter = e.key.toLowerCase();
-    if (/^[a-z]$/.test(letter)) guess(letter);
-  });
+      <div class="board">
+        <div class="gallows-wrap">
+          <svg viewBox="0 0 100 110">
+            <!-- gallows structure, always visible -->
+            <line
+              x1="10"
+              y1="105"
+              x2="70"
+              y2="105"
+              stroke-width="4"
+              stroke-linecap="round"
+            />
+            <line
+              x1="25"
+              y1="105"
+              x2="25"
+              y2="8"
+              stroke-width="4"
+              stroke-linecap="round"
+            />
+            <line
+              x1="25"
+              y1="8"
+              x2="65"
+              y2="8"
+              stroke-width="4"
+              stroke-linecap="round"
+            />
+            <line
+              x1="65"
+              y1="8"
+              x2="65"
+              y2="20"
+              stroke-width="4"
+              stroke-linecap="round"
+            />
+            <!-- figure parts, toggled by JS as wrong guesses accumulate -->
+            <circle
+              class="figure part"
+              data-part="0"
+              cx="65"
+              cy="30"
+              r="10"
+              stroke-width="3"
+              fill="none"
+              style="display: none"
+            />
+            <line
+              class="figure part"
+              data-part="1"
+              x1="65"
+              y1="40"
+              x2="65"
+              y2="70"
+              stroke-width="3"
+              style="display: none"
+            />
+            <line
+              class="figure part"
+              data-part="2"
+              x1="65"
+              y1="48"
+              x2="52"
+              y2="60"
+              stroke-width="3"
+              stroke-linecap="round"
+              style="display: none"
+            />
+            <line
+              class="figure part"
+              data-part="3"
+              x1="65"
+              y1="48"
+              x2="78"
+              y2="60"
+              stroke-width="3"
+              stroke-linecap="round"
+              style="display: none"
+            />
+            <line
+              class="figure part"
+              data-part="4"
+              x1="65"
+              y1="70"
+              x2="54"
+              y2="90"
+              stroke-width="3"
+              stroke-linecap="round"
+              style="display: none"
+            />
+            <line
+              class="figure part"
+              data-part="5"
+              x1="65"
+              y1="70"
+              x2="76"
+              y2="90"
+              stroke-width="3"
+              stroke-linecap="round"
+              style="display: none"
+            />
+          </svg>
+        </div>
+        <div class="word-side">
+          <div class="attempts">
+            Attempts left: <strong id="attempts-left">6</strong>
+          </div>
+          <div class="masked-word" id="masked-word">______</div>
+        </div>
+      </div>
 
-  resetBtn.addEventListener('click', newGame);
+      <div class="status" id="status">Loading a word…</div>
 
-  buildKeyboard();
-  newGame();
-</script>
-</body>
+      <div class="final-banner" id="final-banner" hidden>
+        <div class="final-title" id="final-title"></div>
+        <div class="final-sub" id="final-sub"></div>
+      </div>
+
+      <div class="keyboard" id="keyboard"></div>
+
+      <footer>
+        <button class="reset" id="reset">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+            <polyline points="21 3 21 9 15 9" />
+          </svg>
+          New game
+        </button>
+      </footer>
+    </main>
+
+    <script>
+      const maskedWordEl = document.getElementById("masked-word");
+      const attemptsLeftEl = document.getElementById("attempts-left");
+      const statusEl = document.getElementById("status");
+      const keyboardEl = document.getElementById("keyboard");
+      const finalBanner = document.getElementById("final-banner");
+      const finalTitle = document.getElementById("final-title");
+      const finalSub = document.getElementById("final-sub");
+      const resetBtn = document.getElementById("reset");
+      const figureParts = document.querySelectorAll(".figure.part");
+
+      let gameActive = false;
+      let startAttempts = 6;
+
+      function buildKeyboard() {
+        keyboardEl.innerHTML = "";
+        for (let c = 97; c <= 122; c++) {
+          const letter = String.fromCharCode(c);
+          const btn = document.createElement("button");
+          btn.className = "key";
+          btn.textContent = letter;
+          btn.dataset.letter = letter;
+          btn.addEventListener("click", () => guess(letter));
+          keyboardEl.appendChild(btn);
+        }
+      }
+
+      function setKeyState(letter, state) {
+        const btn = keyboardEl.querySelector(`button[data-letter="${letter}"]`);
+        if (!btn) return;
+        btn.disabled = true;
+        btn.classList.add(state);
+      }
+
+      function updateGallows(attemptsLeft) {
+        const wrongCount = startAttempts - attemptsLeft;
+        figureParts.forEach((el) => {
+          const idx = Number(el.dataset.part);
+          el.style.display = idx < wrongCount ? "" : "none";
+        });
+      }
+
+      function disableAllKeys() {
+        keyboardEl
+          .querySelectorAll("button.key")
+          .forEach((b) => (b.disabled = true));
+      }
+
+      function enableAllKeys() {
+        keyboardEl.querySelectorAll("button.key").forEach((b) => {
+          b.disabled = false;
+          b.classList.remove("correct", "wrong");
+        });
+      }
+
+      function spaceOutMasked(masked) {
+        return masked.split("").join(" ");
+      }
+
+      async function newGame() {
+        statusEl.textContent = "Loading a word…";
+        statusEl.className = "status";
+        finalBanner.hidden = true;
+        enableAllKeys();
+        updateGallows(6);
+
+        try {
+          const res = await fetch("/new-game", { method: "POST" });
+          if (!res.ok) throw new Error("Server error");
+          const data = await res.json();
+
+          maskedWordEl.textContent = spaceOutMasked(data.masked);
+          attemptsLeftEl.textContent = data.attempts;
+          startAttempts = data.attempts;
+          gameActive = true;
+          statusEl.textContent = "Make your first guess";
+          statusEl.className = "status";
+        } catch (err) {
+          statusEl.textContent = "Could not start a new game — try again";
+          statusEl.className = "status wrong";
+        }
+      }
+
+      async function guess(letter) {
+        if (!gameActive) return;
+
+        try {
+          const res = await fetch("/guess", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ letter }),
+          });
+          if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            statusEl.textContent = errData.error || "Something went wrong";
+            statusEl.className = "status wrong";
+            return;
+          }
+          const data = await res.json();
+
+          maskedWordEl.textContent = spaceOutMasked(data.masked);
+          attemptsLeftEl.textContent = data.attempts;
+          updateGallows(data.attempts);
+
+          if (data.found) {
+            setKeyState(letter, "correct");
+            statusEl.textContent = "Good guess!";
+            statusEl.className = "status correct";
+          } else {
+            setKeyState(letter, "wrong");
+            statusEl.textContent = "Wrong guess!";
+            statusEl.className = "status wrong";
+          }
+
+          if (data.status !== "playing") {
+            gameActive = false;
+            disableAllKeys();
+            finalBanner.hidden = false;
+            if (data.status === "won") {
+              finalTitle.textContent = "Congratulations! You guessed the word!";
+              finalTitle.className = "final-title won";
+            } else {
+              finalTitle.textContent = "Game Over!";
+              finalTitle.className = "final-title lost";
+            }
+            finalSub.textContent = "The word was: " + data.word;
+          }
+        } catch (err) {
+          statusEl.textContent = "Something went wrong — try again";
+          statusEl.className = "status wrong";
+        }
+      }
+
+      document.addEventListener("keydown", (e) => {
+        if (!gameActive) return;
+        const letter = e.key.toLowerCase();
+        if (/^[a-z]$/.test(letter)) guess(letter);
+      });
+
+      resetBtn.addEventListener("click", newGame);
+
+      buildKeyboard();
+      newGame();
+    </script>
+  </body>
 </html>
